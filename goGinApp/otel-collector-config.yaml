@@ -1,0 +1,40 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+      http:
+        endpoint: localhost:4318
+  mysql:
+    endpoint: mysqldb:3306
+    username: root
+    password: password123
+    collection_interval: 10s
+    initial_delay: 10s
+processors:
+  resource/env:
+    attributes:
+      - key: deployment.environment
+        value: staging
+        action: upsert
+  batch:
+    send_batch_size: 1000
+    timeout: 10s
+exporters:
+  otlp:
+    endpoint: "ingest.in.signoz.cloud:443" # Replace {region} with your actual region if using Signoz cloud
+    tls:
+      insecure: false
+    headers:
+      "signoz-access-token": "72282c07-60ad-45ff-9131-3b8819f9cdc3" # Replace {signoz-token} with your actual token
+  logging:
+    verbosity: detailed
+service:
+  telemetry:
+    metrics:
+      address: localhost:8888
+  pipelines:
+    metrics:
+      receivers: [otlp, mysql]
+      processors: [resource/env, batch]
+      exporters: [otlp]
