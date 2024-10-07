@@ -5,28 +5,9 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
-  hostmetrics:
-    collection_interval: 60s
-    scrapers:
-      cpu: {}
-      disk: {}
-      load: {}
-      filesystem: {}
-      memory: {}
-      network: {}
-      paging: {}
-      process:
-        mute_process_name_error: true
-        mute_process_exe_error: true
-        mute_process_io_error: true
-      processes: {}
   elasticsearch:
-    metrics:
-      elasticsearch.node.fs.disk.available:
-        enabled: false
     nodes: ["_local"]
-    skip_cluster_metrics: true
-    indices: [".geoip_databases"]
+    indices: ["_all"]
     endpoint: http://localhost:9200
     username: elastic
     password: 7Bupx55b
@@ -36,12 +17,11 @@ processors:
     send_batch_size: 1000
     timeout: 10s
   # Ref: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md
-  resourcedetection:
-    detectors: [env, system] # Before system detector, include ec2 for AWS, gcp for GCP and azure for Azure.
-    # Using OTEL_RESOURCE_ATTRIBUTES envvar, env detector adds custom labels.
-    timeout: 2s
-    system:
-      hostname_sources: [os] # alternatively, use [dns,os] for setting FQDN as host.name and os as fallback
+  resource/env:
+    attributes:
+    - key: deployment.environment
+      value: staging
+      action: upsert
 extensions:
   health_check: {}
   zpages: {}
@@ -61,18 +41,6 @@ service:
   extensions: [health_check, zpages]
   pipelines:
     metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp]
-    metrics/internal:
-      receivers: [hostmetrics, elasticsearch]
-      processors: [resourcedetection, batch]
-      exporters: [otlp]
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp]
-    logs:
-      receivers: [otlp]
-      processors: [batch]
+      receivers: [otlp, elasticsearch]
+      processors: [resource/env, batch]
       exporters: [otlp]
