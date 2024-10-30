@@ -10,3 +10,20 @@ presets:
     enabled: true
   loggingExporter:
     enabled: false
+otelDeployment:
+  config:
+    receivers:
+      elasticsearch:
+        nodes: ["_local"]
+        indices: ["_all"]
+        endpoint: http://quickstart-es-http.default.svc.cluster.local:9200
+        username: elastic
+        password: E02DMIJWp57aI53Kw083SZ6V
+        collection_interval: 10s
+    service:
+      pipelines:
+        metrics/internal:
+          receivers: [elasticsearch]
+          processors: [batch]
+          exporters: []
+
